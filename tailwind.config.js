@@ -18,4 +18,9 @@ module.exports = {
     },
   },
   plugins: [],
+  purge: {
+    options: {
+      safelist: ["bg-red-100", "bg-gray-100", "bg-green-100"],
+    },
+  },
 };
