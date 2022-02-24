@@ -31,8 +31,6 @@ function usePokemonDetail(pokemon: Pokemon) {
       );
       const rawPokemon: PokemonDetailResponse = await response.json();
 
-      console.warn("raw pokemon", rawPokemon);
-
       setPokemonDetail({
         name: rawPokemon.name,
         types: rawPokemon.types.map((type) => type.type.name),
@@ -47,7 +45,6 @@ function usePokemonDetail(pokemon: Pokemon) {
 
 function Card({ pokemon }: { pokemon: Pokemon }) {
   const pokemonDetail = usePokemonDetail(pokemon);
-  console.warn("Pokemon Detail", pokemonDetail);
 
   const colors = {
     grass: "green-100",
@@ -55,7 +52,6 @@ function Card({ pokemon }: { pokemon: Pokemon }) {
     normal: "gray-100",
   };
   const color = colors[pokemonDetail?.types?.[0]] || "green-100";
-  console.warn("Color", color);
 
   return (
     <div className={`p-2 rounded-xl bg-${color} text-center`}>
