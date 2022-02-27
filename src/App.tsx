@@ -1,8 +1,13 @@
 import Pokedex from "./Pokedex.tsx";
 import "./App.css";
-import { useState } from "react";
-import { useEffect } from "react";
+import { useState, useEffect, useReducer, useCallback } from "react";
 import { Pokemon, PokeAPIResponse } from "./types";
+
+interface Data {
+  pokemons: Pokemon[];
+  count: number;
+  nextPage: string;
+}
 
 async function fetchPokemons(pageUrl) {
   const response = await fetch(pageUrl);
@@ -12,56 +17,79 @@ async function fetchPokemons(pageUrl) {
 }
 
 function usePokemons() {
-  const [pokemons, setPokemons] = useState<Pokemon[]>([]);
-  const [count, setCount] = useState<number>();
-  const [nextPage, setNextPage] = useState<string>();
+  const [data, setData] = useReducer(
+    (state: Data, data: Data) => ({
+      pokemons: [...state.pokemons, ...data.pokemons],
+      count: data.count,
+      nextPage: data.nextPage
+    }),
+    {
+      pokemons: [],
+      count: 0,
+      nextPage: "",
+    }
+  );
+  const { nextPage } = data;
 
   useEffect(() => {
     const FIRST_PAGE = "https://pokeapi.co/api/v2/pokemon?limit=20&offset=0";
 
-    async function getPokemons(pageUrl) {
-      const json = await fetchPokemons(pageUrl);
-
-      updateState(json);
-    }
-
-    getPokemons(FIRST_PAGE);
+    fetchPokemons(FIRST_PAGE).then((json) => {
+      setData({
+        pokemons: json.results,
+        count: json.count,
+        nextPage: json.next
+      });
+    });
   }, []);
 
-  const fetchMorePokemons = async () => {
-    const json = await fetchPokemons(nextPage);
-    updateState(json);
+  const fetchMorePokemons = () => {
+    fetchPokemons(nextPage).then((json) => {
+      setData({
+        pokemons: json.results,
+        count: json.count,
+        nextPage: json.next
+      });
+    });
   };
 
-  const updateState = (json) => {
-    setPokemons((pokemons) => pokemons.concat(json.results));
-    setCount(json.count);
-    setNextPage(json.next);
-  };
+  return { data, fetchMorePokemons };
+}
 
-  return { pokemons, count, nextPage, fetchMorePokemons };
+function Header({ count }) {
+  return (
+    <header>
+      <h1 className="text-3xl font-bold mb-5"> Pokedex </h1>
+      <p> Count: {count}</p>
+    </header>
+  )
+}
+
+function FetchButton({ fetchMorePokemons }) {
+  console.log("Rendered button")
+  return (
+    <div className="flex justify-center">
+      <button
+        className="mt-5 text-center self-center bg-blue-800 rounded text-white p-2"
+        onClick={fetchMorePokemons}
+      >
+        Next Page
+      </button>
+    </div>
+  )
 }
 
 function App() {
-  const { pokemons, count, nextPage, fetchMorePokemons } = usePokemons();
-  console.log(pokemons);
-  console.log(count);
-  console.log(nextPage);
+  const {
+    data: { pokemons, count },
+    fetchMorePokemons,
+  } = usePokemons();
 
   return (
     <div className="px-6 py-8 w-screen h-screen bg-white">
-      <header>
-        <h1 className="text-3xl font-bold mb-5"> Pokedex </h1>
-      </header>
+      <Header count={count} />
       <Pokedex pokemons={pokemons} />
-      <div className="flex justify-center">
-        <button
-          className="mt-5 text-center self-center bg-blue-800 rounded text-white p-2"
-          onClick={fetchMorePokemons}
-        >
-          Next Page
-        </button>
-      </div>
+      <FetchButton fetchMorePokemons={fetchMorePokemons} />
     </div>
   );
 }
